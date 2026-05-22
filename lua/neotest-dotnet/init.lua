@@ -136,6 +136,11 @@ DotnetNeotestAdapter.build_spec = function(args)
 
   local specs = build_spec_utils.create_specs(args.tree, nil, additional_args)
 
+  if not specs or #specs == 0 then
+    logger.warn("neotest-dotnet: No specs created - returning nil")
+    return nil
+  end
+
   logger.debug("neotest-dotnet: Created " .. #specs .. " specs, with contents: ")
   logger.debug(specs)
 
@@ -161,6 +166,11 @@ end
 ---@param tree neotest.Tree
 ---@return neotest.Result[]
 DotnetNeotestAdapter.results = function(spec, _, tree)
+  if not spec or not spec.context then
+    logger.error("neotest-dotnet: spec or spec.context is nil, cannot retrieve results")
+    return {}
+  end
+  
   local output_file = spec.context.results_path
 
   logger.debug("neotest-dotnet: Fetching results from neotest tree (as list): ")

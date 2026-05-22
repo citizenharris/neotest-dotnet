@@ -112,10 +112,29 @@ function M.get_test_framework_utils_from_source(source, custom_attribute_args)
   local parsed_query = vim.fn.has("nvim-0.9.0") == 1
       and vim.treesitter.query.parse("c_sharp", framework_query)
     or vim.treesitter.parse_query("c_sharp", framework_query)
-  for _, captures, _ in parsed_query:iter_matches(root, source, nil, nil, { all = false }) do
-    local test_attribute = vim.fn.has("nvim-0.9.0") == 1
-        and vim.treesitter.get_node_text(captures[1], source)
-      or vim.treesitter.query.get_node_text(captures[1], source)
+  
+  for _, match, _ in parsed_query:iter_matches(root, source, nil, nil, { all = false }) do
+    local test_attribute = nil
+    
+    -- Handle both old and new treesitter API
+    -- New API (Neovim 0.12+): match is a table keyed by capture ID with arrays of nodes
+    -- Old API (Pre-0.12): match is a flat array indexed by capture position
+    local first_capture = match[1]
+    
+    if type(first_capture) == "table" and #first_capture > 0 then
+      -- New API: match[1] is an array of nodes
+      first_capture = first_capture[1]
+    end
+    
+    if not first_capture or not first_capture.start then
+      logger.debug("neotest-dotnet: Framework discovery got invalid capture, skipping")
+      goto continue
+    end
+    
+    test_attribute = vim.fn.has("nvim-0.9.0") == 1
+        and vim.treesitter.get_node_text(first_capture, source)
+      or vim.treesitter.query.get_node_text(first_capture, source)
+    
     if test_attribute then
       if
         string.find(xunit_attributes, test_attribute)
@@ -137,6 +156,7 @@ function M.get_test_framework_utils_from_source(source, custom_attribute_args)
         return xunit
       end
     end
+    ::continue::
   end
 end
 

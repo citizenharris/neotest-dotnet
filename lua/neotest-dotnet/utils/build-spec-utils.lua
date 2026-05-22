@@ -109,9 +109,16 @@ function BuildSpecUtils.create_specs(tree, specs, dotnet_additional_args)
   elseif position.type == "file" then
     local proj_root = lib.files.match_root_pattern("*.csproj")(position.path)
     local filter = {}
+    logger.debug("neotest-dotnet: Processing file position, iterating tree nodes...")
+    local node_count = 0
+    local class_count = 0
     for _, child in tree:iter_nodes() do
+      node_count = node_count + 1
       local data = child:data()
+      logger.debug(string.format("neotest-dotnet: Node %d - type=%s, name=%s, is_class=%s, framework=%s", 
+        node_count, data.type or "nil", data.name or "nil", tostring(data.is_class or false), data.framework or "nil"))
       if data.is_class then
+        class_count = class_count + 1
         if data.framework == "xunit" then
           table.insert(filter, "FullyQualifiedName~" .. data.name)
         elseif data.framework == "nunit" then
@@ -119,6 +126,7 @@ function BuildSpecUtils.create_specs(tree, specs, dotnet_additional_args)
         end
       end
     end
+    logger.debug(string.format("neotest-dotnet: Found %d total nodes, %d class nodes, %d filters", node_count, class_count, #filter))
 
     if #filter > 0 then
       local spec = BuildSpecUtils.create_single_spec(
@@ -128,10 +136,12 @@ function BuildSpecUtils.create_specs(tree, specs, dotnet_additional_args)
         dotnet_additional_args
       )
       table.insert(specs, spec)
+    else
+      logger.warn("neotest-dotnet: No filters created for file, no specs will be generated")
     end
   end
 
-  return #specs < 0 and nil or specs
+  return #specs > 0 and specs or nil
 end
 
 return BuildSpecUtils
