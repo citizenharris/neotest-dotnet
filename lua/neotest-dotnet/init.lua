@@ -107,7 +107,7 @@ DotnetNeotestAdapter.discover_positions = function(path)
     ) @namespace.definition
   ]] .. framework_queries
 
-  local tree = lib.treesitter.parse_positions(path, query, {
+  local tree = lib.treesitter.parse_positions_from_string(path, content, query, {
     nested_namespaces = true,
     nested_tests = true,
     build_position = "require('neotest-dotnet')._build_position",
@@ -170,7 +170,7 @@ DotnetNeotestAdapter.results = function(spec, _, tree)
     logger.error("neotest-dotnet: spec or spec.context is nil, cannot retrieve results")
     return {}
   end
-  
+
   local output_file = spec.context.results_path
 
   logger.debug("neotest-dotnet: Fetching results from neotest tree (as list): ")
